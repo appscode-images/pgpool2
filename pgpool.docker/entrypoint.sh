@@ -42,7 +42,7 @@ generate_pool_passwd() {
         echo "Generating pool_passwd..."
 
         if [[ "${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" == "scram-sha-256" ]]; then
-            echo $(head -c 20 /dev/urandom | base64) > "${pgpoolkey_file}"
+            echo $(head -c 20 /dev/urandom | base64) >"${pgpoolkey_file}"
             cmd="pg_enc -k ${pgpoolkey_file}"
         elif [[ "${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" == "md5" ]]; then
             cmd="pg_md5"
@@ -51,26 +51,25 @@ generate_pool_passwd() {
         echo "Skip generating pool_passwd. Use password authentication between client and Pgpool-II and force ssl on all connections in pool_hba.conf."
 
         export PGPOOL_PASSWORD_ENCRYPTION_METHOD="password"
-        echo -e "\n" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
-        echo "ssl = 'on'" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
-        echo "enable_pool_hba = 'on'" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+        echo -e "\n" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+        echo "ssl = 'on'" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+        echo "enable_pool_hba = 'on'" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
         return
     fi
 
     # Register username and password to pool_passwd
     # All the environment variables defined in format *_USERNAME, *_PASSWORD will be registered.
     ev_usernames=($(printenv | grep -E '.+_USERNAME=.+' | awk -F "_" '{print $1}'))
-    for ev_username in "${ev_usernames[@]}"
-    do
+    for ev_username in "${ev_usernames[@]}"; do
         username=$(eval "echo \$${ev_username}_USERNAME")
         password=$(eval "echo \$${ev_username}_PASSWORD")
 
-        if [[ -n "${username}" ]]  && [[ -n "${password}" ]]; then
+        if [[ -n "${username}" ]] && [[ -n "${password}" ]]; then
             if [[ "${PGPOOL_SKIP_PASSWORD_ENCRYPTION}" =~ ^(yes|true|on)$ ]]; then
                 echo "Skip password encryption. Use the encrypted password."
-                echo "${username}:${password}" >> ${PGPOOL_INSTALL_DIR}/etc/pool_passwd
+                echo "${username}:${password}" >>${PGPOOL_INSTALL_DIR}/etc/pool_passwd
             else
-                ${PGPOOL_INSTALL_DIR}/bin/${cmd} -m -f ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf -u ${username} ${password} > /dev/null
+                ${PGPOOL_INSTALL_DIR}/bin/${cmd} -m -f ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf -u ${username} ${password} >/dev/null
             fi
         else
             echo "password for $username user is not defined."
@@ -87,9 +86,9 @@ generate_pcp_conf() {
         echo "Generating pcp.conf..."
         if [[ "${PGPOOL_SKIP_PASSWORD_ENCRYPTION}" =~ ^(yes|true|on)$ ]]; then
             echo "Skip password encryption. Use the encrypted password."
-            echo "${PGPOOL_PCP_USER}:${PGPOOL_PCP_PASSWORD}" >> ${PGPOOL_INSTALL_DIR}/etc/pcp.conf
+            echo "${PGPOOL_PCP_USER}:${PGPOOL_PCP_PASSWORD}" >>${PGPOOL_INSTALL_DIR}/etc/pcp.conf
         else
-            echo "${PGPOOL_PCP_USER}:"`${PGPOOL_INSTALL_DIR}/bin/pg_md5 ${PGPOOL_PCP_PASSWORD}` >> ${PGPOOL_INSTALL_DIR}/etc/pcp.conf
+            echo "${PGPOOL_PCP_USER}:"$(${PGPOOL_INSTALL_DIR}/bin/pg_md5 ${PGPOOL_PCP_PASSWORD}) >>${PGPOOL_INSTALL_DIR}/etc/pcp.conf
         fi
     else
         echo "Skip generating pcp.conf. PGPOOL_PCP_USER or PGPOOL_PCP_PASSWORD isn't defined."
@@ -101,34 +100,34 @@ generate_pool_hba_conf() {
     if [[ -f ${PGPOOL_CONF_VOLUME}/pool_hba.conf ]]; then
 
         cp ${PGPOOL_CONF_VOLUME}/pool_hba.conf ${PGPOOL_INSTALL_DIR}/etc/
-        grep -E "^hostssl" ${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf > /dev/null
+        grep -E "^hostssl" ${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf >/dev/null
 
         if [[ $? -ne 0 ]] && [[ ! "${PGPOOL_ENABLE_POOL_PASSWD}" =~ ^(yes|true|on)$ ]]; then
             echo "ERROR: If pool_passwd is disabled, password authentication will be used. You must add hostssl lines in pool_hba.conf to secure all connections."
             exit 1
         else
             echo "Custom pool_hba.conf file detected. Use custom pool_hba.conf."
-            return;
+            return
         fi
-     fi
+    fi
 
-    grep -E "^enable_pool_hba\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^enable_pool_hba\s*=\s*'?on'?" > /dev/null
+    grep -E "^enable_pool_hba\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^enable_pool_hba\s*=\s*'?on'?" >/dev/null
     if [[ $? -ne 0 ]]; then
         echo "Skip generating pool_hba.conf due to enable_pool_hba = off."
-        return;
+        return
     fi
 
     echo "Generating pool_hba.conf..."
 
-    echo "local   all    all        trust" >> ${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
+    echo "local   all    all        trust" >>${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
 
-    grep -E "^ssl\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^ssl\s*=\s*'?on'?" > /dev/null
+    grep -E "^ssl\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^ssl\s*=\s*'?on'?" >/dev/null
 
     if [[ $? -eq 0 ]]; then
         echo "Add hostssl entry in pool_hba.conf to enable TLS connections."
-        echo "hostssl    all    all    all    ${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" >> ${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
+        echo "hostssl    all    all    all    ${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" >>${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
     else
-        echo "host    all    all    all    ${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" >> ${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
+        echo "host    all    all    all    ${PGPOOL_PASSWORD_ENCRYPTION_METHOD}" >>${PGPOOL_INSTALL_DIR}/etc/pool_hba.conf
     fi
 }
 
@@ -140,11 +139,11 @@ function generate_certs() {
         mkdir ${PGPOOL_INSTALL_DIR}/tls
         cp ${PGPOOL_CONF_VOLUME}/tls/* ${PGPOOL_INSTALL_DIR}/tls/
 
-        echo -e "\n" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
-        echo "ssl = 'on'" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+        echo -e "\n" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+        echo "ssl = 'on'" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
     else
 
-        grep -E "^ssl\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^ssl\s*=\s*'?on'?" > /dev/null
+        grep -E "^ssl\s*=" ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf | tail -1 | grep -E "^ssl\s*=\s*'?on'?" >/dev/null
 
         if [[ $? -ne 0 ]]; then
             return
@@ -156,7 +155,7 @@ function generate_certs() {
 
         /usr/bin/openssl req -nodes -new -x509 -days 1825 -subj /CN=$(hostname) \
             -keyout ${PGPOOL_INSTALL_DIR}/tls/tls.key \
-            -out ${PGPOOL_INSTALL_DIR}/tls/tls.crt > /dev/null 2>&1
+            -out ${PGPOOL_INSTALL_DIR}/tls/tls.crt >/dev/null 2>&1
 
         if [[ $? -ne 0 ]]; then
             echo "ERROR: failed to generate private key and certificate."
@@ -164,9 +163,9 @@ function generate_certs() {
         fi
     fi
 
-    echo -e "\n" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
-    echo "ssl_key = '${PGPOOL_INSTALL_DIR}/tls/tls.key'" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
-    echo "ssl_cert = '${PGPOOL_INSTALL_DIR}/tls/tls.crt'" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+    echo -e "\n" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+    echo "ssl_key = '${PGPOOL_INSTALL_DIR}/tls/tls.key'" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+    echo "ssl_cert = '${PGPOOL_INSTALL_DIR}/tls/tls.crt'" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
 }
 
 validate_pgpool_settings() {
@@ -182,7 +181,7 @@ validate_pgpool_settings() {
     # Validate sr_check_*
     sr_check_user=$(grep -E "^sr_check_user\s*=" ${pgpool_conf} | tail -1 | sed -e "s/^sr_check_user\s*=\s*'\(.*\)'/\1/g")
     sr_check_password=$(grep -E "^sr_check_password\s*=" ${pgpool_conf} | tail -1 | sed -e "s/^sr_check_password\s*=\s*'\(.*\)'/\1/g")
-    grep -E "^sr_check_period\s*=" ${pgpool_conf} | tail -1 | grep -E "^sr_check_period\s*=\s*'?0'?" > /dev/null
+    grep -E "^sr_check_period\s*=" ${pgpool_conf} | tail -1 | grep -E "^sr_check_period\s*=\s*'?0'?" >/dev/null
 
     if [[ $? -ne 0 ]]; then
         if [[ -z "${sr_check_user}" ]]; then
@@ -190,7 +189,7 @@ validate_pgpool_settings() {
             exit 1
         fi
 
-        grep -E "^${sr_check_user}:.+" ${PGPOOL_INSTALL_DIR}/etc/pool_passwd > /dev/null
+        grep -E "^${sr_check_user}:.+" ${PGPOOL_INSTALL_DIR}/etc/pool_passwd >/dev/null
 
         if [[ $? -ne 0 ]] && [[ -z ${sr_check_password} ]]; then
             echo "ERROR: password of sr_check_user is not set. Set sr_check_password or environment variable. exiting..."
@@ -209,7 +208,7 @@ validate_pgpool_settings() {
             exit 1
         fi
 
-        grep -E "^${health_check_user}:.+" ${PGPOOL_INSTALL_DIR}/etc/pool_passwd > /dev/null
+        grep -E "^${health_check_user}:.+" ${PGPOOL_INSTALL_DIR}/etc/pool_passwd >/dev/null
 
         if [[ $? -ne 0 ]] && [[ -z ${health_check_password} ]]; then
             echo "ERROR: password of health_check_user is not set. Set health_check_password or environment variable. exiting..."
@@ -227,11 +226,11 @@ validate_pgpool_settings() {
 
     # Validate failover_on_backend_error
     # If "failover_on_backend_error = on" isn't specified, turn it off.
-    grep -E "^failover_on_backend_error\s*=" ${pgpool_conf} | tail -1 | grep -E "^failover_on_backend_error\s*=\s*'?on'?" > /dev/null
+    grep -E "^failover_on_backend_error\s*=" ${pgpool_conf} | tail -1 | grep -E "^failover_on_backend_error\s*=\s*'?on'?" >/dev/null
 
     if [[ $? -ne 0 ]]; then
-        echo -e "\n" >> ${pgpool_conf}
-        echo "failover_on_backend_error = 'off'" >> ${pgpool_conf}
+        echo -e "\n" >>${pgpool_conf}
+        echo "failover_on_backend_error = 'off'" >>${pgpool_conf}
     fi
 }
 
@@ -252,7 +251,7 @@ else
 
     # Setting pgpool.conf using environment variables with "PGPOOL_PARAMS_*"
     # For example, environment variable "PGPOOL_PARAMS_PORT=9999" is converted to "port = '9999'"
-    printenv | sed -nr "s/^PGPOOL_PARAMS_(.*)=(.*)/\L\1 = '\E\2'/p" >> ${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
+    printenv | sed -nr "s/^PGPOOL_PARAMS_(.*)=(.*)/\L\1 = '\E\2'/p" >>${PGPOOL_INSTALL_DIR}/etc/pgpool.conf
 fi
 
 generate_pool_passwd

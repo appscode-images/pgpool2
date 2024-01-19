@@ -1,4 +1,4 @@
-FROM alpine:3.17
+FROM alpine
 
 ARG PGPOOL_VER
 
@@ -6,7 +6,7 @@ ENV PGPOOL_INSTALL_DIR /opt/pgpool-II
 ENV PGPOOL_CONF_VOLUME /config
 
 # Create postgres user used to start Pgpool-II
-RUN set -ex; \ 
+RUN set -ex; \
     addgroup -g 70 -S postgres; \
     adduser -u 70 -S -D -G postgres -H -h /var/lib/pgsql -s /bin/sh postgres; \
     mkdir -p /var/lib/pgsql; \
