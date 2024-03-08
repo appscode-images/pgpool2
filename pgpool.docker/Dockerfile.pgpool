@@ -69,7 +69,7 @@ RUN set -eux \
     && rm -rf /tmp/*
 
 
-USER postgres
+USER 70
 
 ENTRYPOINT ["/opt/pgpool-II/bin/entrypoint.sh"]
 CMD ["/opt/pgpool-II/bin/start.sh"]
