@@ -1,6 +1,6 @@
 SHELL=/bin/bash -o pipefail
 
-REGISTRY   ?= ghcr.io/appscode-images
+REGISTRY   ?= hiranmoy28
 BIN        ?= pgpool2
 IMAGE      := $(REGISTRY)/$(BIN)
 TAG        ?= $(shell git describe --exact-match --abbrev=0 2>/dev/null || echo "")

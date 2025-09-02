@@ -78,7 +78,6 @@ generate_pool_passwd() {
 }
 
 generate_pcp_conf() {
-
     touch ${PGPOOL_INSTALL_DIR}/etc/pcp.conf
     chmod 0600 ${PGPOOL_INSTALL_DIR}/etc/pcp.conf
 
