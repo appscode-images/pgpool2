@@ -42,6 +42,7 @@ RUN set -eux \
 COPY fix_compile_error.patch /tmp/pgpool/
 COPY entrypoint.sh ${PGPOOL_INSTALL_DIR}/bin/
 COPY start.sh ${PGPOOL_INSTALL_DIR}/bin/
+COPY initialize.sh ${PGPOOL_INSTALL_DIR}/bin/
 
 # Install Pgpool-II
 RUN set -eux \
@@ -61,6 +62,7 @@ RUN set -eux \
     && chown -R postgres:postgres /var/run/pgpool /var/run/postgresql ${PGPOOL_INSTALL_DIR} \
     && chgrp -R 0 /var/run/pgpool && chmod -R g=u /var/run/pgpool \
     && chgrp -R 0 ${PGPOOL_INSTALL_DIR} && chmod -R g=u ${PGPOOL_INSTALL_DIR} \
+    && chmod ug+x ${PGPOOL_INSTALL_DIR}/bin/initialize.sh \
     && echo 'postgres ALL=NOPASSWD: /sbin/ip' | sudo EDITOR='tee -a' visudo >/dev/null 2>&1 \
     && echo 'postgres ALL=NOPASSWD: /usr/sbin/arping' | sudo EDITOR='tee -a' visudo >/dev/null 2>&1
 
@@ -73,6 +75,6 @@ RUN set -eux \
 USER 70
 
 ENTRYPOINT ["/opt/pgpool-II/bin/entrypoint.sh"]
-CMD ["/opt/pgpool-II/bin/start.sh"]
+CMD ["/opt/pgpool-II/bin/initialize.sh"]
 
 EXPOSE 9999
