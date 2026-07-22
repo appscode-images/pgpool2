@@ -5,8 +5,8 @@
       echo "INIT: Init Directory Exists"
       # Wait for Pgpool-II to be ready
       CONFIG_FILE=${CONFIG_FILE:-"/config/pgpool.conf"}
-      PGPOOL_HOST=${PGPOOL_HOST:-"localhost"}
-      PGPOOL_PORT=${PGPOOL_PORT:-"9999"}
+      PGPOOL_HOST="localhost"
+      PGPOOL_PORT="9999"
       PGPOOL_DBNAME=${PGPOOL_DBNAME:-"postgres"}
 
       # Extract SSL setting from pgpool.conf
